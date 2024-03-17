@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import {
@@ -8,13 +9,15 @@ import {
   aws_certificatemanager as acm,
   aws_route53 as route53,
   aws_route53_targets as route53targets,
-  aws_cloudfront_origins as origins
+  aws_cloudfront_origins as origins,
+  aws_lambda as lambda
 } from 'aws-cdk-lib';
 
 const domainName = "justcrossword.com"
 const s3AssetPath = "./assets"
 const rootObject = "index.html"
-const version = "1"
+const urlRewriteFunc = "functions/url-rewrite.js"
+const lambdaHandler = "function/lambda-handler.py"
 
 export class CrosswordInfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -64,7 +67,7 @@ export class CrosswordInfraStack extends cdk.Stack {
 
     // create a function to rewrite urls
     const rewriteFunction = new cloudfront.Function(this, 'Function', {
-      code: cloudfront.FunctionCode.fromFile({ filePath: 'functions/url-rewrite.js' }),
+      code: cloudfront.FunctionCode.fromFile({ filePath: urlRewriteFunc }),
     });
 
     // Create some security headers for responses
@@ -135,5 +138,20 @@ export class CrosswordInfraStack extends cdk.Stack {
       target: route53.RecordTarget.fromAlias(new route53targets.CloudFrontTarget(cloudfrontDistribution)),
       zone
     });
+
+    // TODO: create lambda
+        //  lambda function definition
+        const lambdaFunction = new lambda.Function(this, 'lambda-function', {
+          runtime: lambda.Runtime.PYTHON_3_12,
+          timeout: cdk.Duration.seconds(),
+          handler: 'lambda_handler.handler',
+          code: lambda.Code.fromAsset(path.join(__dirname, '/../functions/nyt-lambda')),
+          // environment: {
+          //   REGION: cdk.Stack.of(this).region,
+          //   AVAILABILITY_ZONES: JSON.stringify(
+          //     cdk.Stack.of(this).availabilityZones,
+          //   ),
+          // },
+        });"Vn1&^4QpdpZooi#V"
   }
 }
