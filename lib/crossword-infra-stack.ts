@@ -17,7 +17,7 @@ const domainName = "justcrossword.com"
 const s3AssetPath = "./assets"
 const rootObject = "index.html"
 const urlRewriteFunc = "functions/url-rewrite.js"
-const lambdaHandler = "function/lambda-handler.py"
+const nytLambdaDeploymentPackage = "functions/nyt-lambda/deployment_package.zip"
 
 export class CrosswordInfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -139,19 +139,17 @@ export class CrosswordInfraStack extends cdk.Stack {
       zone
     });
 
-    // TODO: create lambda
-        //  lambda function definition
-        const lambdaFunction = new lambda.Function(this, 'lambda-function', {
-          runtime: lambda.Runtime.PYTHON_3_12,
-          timeout: cdk.Duration.seconds(),
-          handler: 'lambda_handler.handler',
-          code: lambda.Code.fromAsset(path.join(__dirname, '/../functions/nyt-lambda')),
-          // environment: {
-          //   REGION: cdk.Stack.of(this).region,
-          //   AVAILABILITY_ZONES: JSON.stringify(
-          //     cdk.Stack.of(this).availabilityZones,
-          //   ),
-          // },
-        });"Vn1&^4QpdpZooi#V"
+    // NYT injestion Lambda function definition
+    const nytLambdaFunction = new lambda.Function(this, 'NYTLambdaFunction', {
+      runtime: lambda.Runtime.PYTHON_3_12,
+      timeout: cdk.Duration.seconds(300),
+      handler: 'lambda_handler.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, `/../${nytLambdaDeploymentPackage}`), {
+        
+      })
+    })
+
+    // Grant the lambda read/write to our s3 bucket
+    assetsBucket.grantReadWrite(nytLambdaFunction)
   }
 }

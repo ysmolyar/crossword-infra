@@ -50,6 +50,7 @@ Seems you need the right membership tier in order for your cookies to contain a 
     - deciphering this data structure will basically be the whole task here
     - in order to turn 1d array into 2d array, we need to know the dimensions
         - "The standard daily crossword is 15 by 15 squares, while the Sunday crossword measures 21 by 21 squares" - NYT
+        - results.puzzle_meta.printDotw is the numerical day of the week. monday is 1, sunday is 7. can use this
 ```
 {
   "status": "OK",
@@ -130,3 +131,33 @@ Seems you need the right membership tier in order for your cookies to contain a 
   ]
 }
 ```
+
+
+## Packaging the Python Lambda
+
+```
+mkdir package
+pip3 install --target ./package requests
+cd package
+zip -r ../deployment_package.zip .    
+cd ..  
+zip deployment_package.zip lambda_handler.py
+
+```
+
+
+Ended up having to resort to web scraping someone's personal website bc NYT has all sorts of security provisions around their API which prevent logins... can revisit the NYT official API later...
+
+## TODOS:
+
+- handler code has date hardcoded. make it dynamic to current date
+- script should read root s3 then modify based on class or ids or something. currently we just have a copy of the home page template in lambda func
+- some better building/bunding or deps. currently have to zip up deployment package manually and we point the lambda to the zip
+- actual perms on the lambda for s3 access. currently just ran it from laptop using my cli perms
+- actually set up eventbridge rule and run nightly
+- database for better content management
+- think through content management re: updating previous pages
+- can have multiple answers for a given clue. incorporate this into lambda logic
+- better dry run functionality so you don't have to comment/uncomment bits of the code to make sure you're not updating/wrecking s3 from local development
+- better handling of cloudfront invalidations or versioning. makes development more difficult to have to invalidate all the time
+- cleanup handler code
