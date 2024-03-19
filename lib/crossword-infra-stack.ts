@@ -10,7 +10,8 @@ import {
   aws_route53 as route53,
   aws_route53_targets as route53targets,
   aws_cloudfront_origins as origins,
-  aws_lambda as lambda
+  aws_lambda as lambda,
+  aws_dynamodb as dynamodb
 } from 'aws-cdk-lib';
 
 const domainName = "justcrossword.com"
@@ -151,5 +152,17 @@ export class CrosswordInfraStack extends cdk.Stack {
 
     // Grant the lambda read/write to our s3 bucket
     assetsBucket.grantReadWrite(nytLambdaFunction)
+
+    // Define a DynamoDB table
+    const table = new dynamodb.Table(this, 'CrosswordTable', {
+      partitionKey: { name: 'clue_path', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'number', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, // Use on-demand capacity mode
+    });
+
+    // Output the ARN of the DynamoDB table
+    new cdk.CfnOutput(this, 'CrosswordTableArn', {
+      value: table.tableArn,
+    });
   }
 }
