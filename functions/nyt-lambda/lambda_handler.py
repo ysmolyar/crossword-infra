@@ -7,10 +7,12 @@ import boto3
 ORACLE_URI = "https://www.nytimes.com/svc/crosswords/v2/oracle/daily.json"
 PUZZLE_DETAILS_URI = "https://www.nytimes.com/svc/crosswords/v2/puzzle/{}.json"
 NYT_LOGIN_URI = "https://myaccount.nytimes.com/svc/ios/v2/login"
-DATE = "3/17/2024"
+DATE = "3/21/2024"
 XWORD_INFO_URI = "https://www.xwordinfo.com/Crossword?date={}"
 DIMENSION = 15
 SUNDAY_DIMENSION = 21
+
+DYNAMO_TABLE_NAME = "CrosswordInfraStack-CrosswordTableC285ED21-111C8OOVQD3G"
 
 def read_json_file(file_path):
     with open(file_path, 'r') as file:
@@ -106,14 +108,13 @@ def handler(event, context):
         s3 = boto3.client('s3')
         
         # Initialize DynamoDB client
-        dynamodb = boto3.client('dynamodb')
+        dynamodb = boto3.client('dynamodb', region_name='us-east-1')
     
-        # Define the DynamoDB table name
-        table_name = 'CrosswordInfraStack-CrosswordTableC285ED21-16RFYKAGJIGUZ'
-        root_html_links = ''''''
-        clues_html = '''
-<div><a href="/{}/index.html" class="crossword-link">{}{} {}: View Answer</a></div>
-'''
+#         # Define the DynamoDB table name
+#         root_html_links = ''''''
+#         clues_html = '''
+# <div><a href="/{}/index.html" class="crossword-link">{}{} {}: View Answer</a></div>
+# '''
         # Iterate over the dictionary
         for clue, clue_data in solution_map.items():
             number = clue_data.get('number', '')
@@ -124,33 +125,33 @@ def handler(event, context):
 
 
             # Load HTML template
-            with open('template/answer-page.html', 'r') as file:
-                template_content = file.read()
+            # with open('template/answer-page.html', 'r') as file:
+            #     template_content = file.read()
             
-            # Replace placeholders with actual values
-            rendered_html = template_content.replace('{{CLUE}}', clue)
-            rendered_html = rendered_html.replace('{{ANSWER}}', answer)
+            # # Replace placeholders with actual values
+            # rendered_html = template_content.replace('{{CLUE}}', clue)
+            # rendered_html = rendered_html.replace('{{ANSWER}}', answer)
             
-            # TODO: better dry run functionality
-            try:
-                with open(f"dry-run/{clue_path}-index.html", "x") as file:
-                    file.write(rendered_html)
-            except Exception as e:
-                print(e.strerror)
+            # # TODO: better dry run functionality
+            # try:
+            #     with open(f"dry-run/{clue_path}-index.html", "x") as file:
+            #         file.write(rendered_html)
+            # except Exception as e:
+            #     print(e.strerror)
             
             
-            # save html to list for root object update
-            root_html_links += (clues_html.format(clue_path, number, direction[0], clue))
+            # # save html to list for root object update
+            # root_html_links += (clues_html.format(clue_path, number, direction[0], clue))
 
-            # Upload rendered HTML to S3 bucket
-            # TODO: better way of passing this bucket name. maybe env var from cdk stack
-            print(f"Putting s3 object with key {clue_data['clue_path']}/index.html")
-            s3.put_object(
-                Bucket='crosswordinfrastack-websitebucket75c24d94-geqg8lfkgxrr',
-                Key=f"{clue_data['clue_path']}/index.html",
-                Body=rendered_html.encode('utf-8'),
-                ContentType='text/html'
-            )
+            # # Upload rendered HTML to S3 bucket
+            # # TODO: better way of passing this bucket name. maybe env var from cdk stack
+            # print(f"Putting s3 object with key {clue_data['clue_path']}/index.html")
+            # s3.put_object(
+            #     Bucket='crosswordinfrastack-websitebucket75c24d94-geqg8lfkgxrr',
+            #     Key=f"{clue_data['clue_path']}/index.html",
+            #     Body=rendered_html.encode('utf-8'),
+            #     ContentType='text/html'
+            # )
             
             # Create item to put into DynamoDB
             item = {
@@ -165,7 +166,7 @@ def handler(event, context):
             try:
                 # Put item into DynamoDB table
                 response = dynamodb.put_item(
-                    TableName=table_name,
+                    TableName=DYNAMO_TABLE_NAME,
                     Item=item
                 )
                 print("Item added successfully:", response)
@@ -176,27 +177,27 @@ def handler(event, context):
         # TODO: right now we have a copy of the html file as a template, we will need to read the
         # file from S3 and then inject more intelligently. probably by div or class
         # Load root object HTML template
-        with open('template/root-object.html', 'r') as file:
-            root_content = file.read()
+        # with open('template/root-object.html', 'r') as file:
+        #     root_content = file.read()
 
-        # Replace placeholders with actual values
-        rendered_html = root_content.replace('{{CLUES}}', root_html_links) 
-        rendered_html = rendered_html.replace('{{DATE}}', DATE) 
+        # # Replace placeholders with actual values
+        # rendered_html = root_content.replace('{{CLUES}}', root_html_links) 
+        # rendered_html = rendered_html.replace('{{DATE}}', DATE) 
 
-        with open(f"dry-run/index.html", "w") as file:
-            file.write(rendered_html)
+        # with open(f"dry-run/index.html", "w") as file:
+        #     file.write(rendered_html)
     
-        # update root object
-        print("Updating root object at index.html")
-        s3.put_object(
-            Bucket='crosswordinfrastack-websitebucket75c24d94-geqg8lfkgxrr',
-            Key=f"index.html",
-            Body=rendered_html.encode('utf-8'),
-            ContentType='text/html'
-        )
+        # # update root object
+        # print("Updating root object at index.html")
+        # s3.put_object(
+        #     Bucket='crosswordinfrastack-websitebucket75c24d94-geqg8lfkgxrr',
+        #     Key=f"index.html",
+        #     Body=rendered_html.encode('utf-8'),
+        #     ContentType='text/html'
+        # )
         return {
             'statusCode': 200,
-            'body': json.dumps('HTML files generated and uploaded to S3 successfully!')
+            'body': json.dumps(f"${DATE} crossword parsed and uploaded to DynamoDB successfully!")
         }
 
 handler("", "")

@@ -1,0 +1,926 @@
+{
+    "status": "OK",
+    "entitlement": "premium",
+    "results": [
+      {
+        "puzzle_id": 21758,
+        "promo_id": null,
+        "version": 0,
+        "puzzle_meta": {
+          "formatType": "Normal",
+          "publishType": "Daily",
+          "title": "",
+          "printDate": "2024-03-14",
+          "printDotw": 4,
+          "editor": "Joel Fagliano",
+          "copyright": "",
+          "height": 14,
+          "width": 15,
+          "notes": [
+            
+          ],
+          "links": [
+            
+          ],
+          "layoutExtra": [
+            
+          ],
+          "author": "Jeffrey Martinovic",
+          "relatedContent": {
+            "text": "Read and comment on the Wordplay blog",
+            "url": "https://www.nytimes.com/2024/03/13/crosswords/daily-puzzle-2024-03-14.html"
+          }
+        },
+        "print_date": "2024-03-14",
+        "enhanced_tier_date": null,
+        "authors": [
+          "Jeffrey Martinovic"
+        ],
+        "puzzle_data": {
+          "clues": {
+            "A": [
+              {
+                "clueNum": 1,
+                "clueStart": 0,
+                "value": "Pair on a schooner",
+                "clueEnd": 4
+              },
+              {
+                "clueNum": 6,
+                "clueStart": 6,
+                "value": "Last in a series",
+                "clueEnd": 8
+              },
+              {
+                "clueNum": 9,
+                "clueStart": 10,
+                "value": "It may be thrown by a vaquero",
+                "clueEnd": 14
+              },
+              {
+                "clueNum": 14,
+                "clueStart": 15,
+                "value": "\"Hurry with your dinner!\"",
+                "clueEnd": 19
+              },
+              {
+                "clueNum": 15,
+                "clueStart": 21,
+                "value": "\"Gotcha!\"",
+                "clueEnd": 23
+              },
+              {
+                "clueNum": 16,
+                "clueStart": 25,
+                "value": "Like an obelisk at night, maybe",
+                "clueEnd": 29
+              },
+              {
+                "clueNum": 17,
+                "clueStart": 30,
+                "value": "Origin story in Genesis 11:1-9",
+                "clueEnd": 44
+              },
+              {
+                "clueNum": 20,
+                "clueStart": 47,
+                "value": "Colorful language?",
+                "clueEnd": 57
+              },
+              {
+                "clueNum": 21,
+                "clueStart": 60,
+                "value": "Radar gun stat, for short",
+                "clueEnd": 62
+              },
+              {
+                "clueNum": 23,
+                "clueStart": 64,
+                "value": "Parks carefully",
+                "clueEnd": 70
+              },
+              {
+                "clueNum": 24,
+                "clueStart": 72,
+                "value": "Co. that launched the world's first communications satellite",
+                "clueEnd": 74
+              },
+              {
+                "clueNum": 27,
+                "clueStart": 75,
+                "value": "Part of 10-Down",
+                "clueEnd": 78,
+                "related": {
+                  "down": [
+                    10
+                  ],
+                  "across": [
+                    
+                  ]
+                }
+              },
+              {
+                "clueNum": 29,
+                "clueStart": 86,
+                "value": "Last in a series",
+                "clueEnd": 89
+              },
+              {
+                "clueNum": 30,
+                "clueStart": 90,
+                "value": "World capital noted for its French colonial architecture",
+                "clueEnd": 94
+              },
+              {
+                "clueNum": 32,
+                "clueStart": 96,
+                "value": "Geocaching necessity, in brief",
+                "clueEnd": 98
+              },
+              {
+                "clueNum": 35,
+                "clueStart": 100,
+                "value": "\"No ___\" (\"Unacceptable\")",
+                "clueEnd": 104
+              },
+              {
+                "clueNum": 36,
+                "clueStart": 105,
+                "value": "Actor Hawke",
+                "clueEnd": 109
+              },
+              {
+                "clueNum": 37,
+                "clueStart": 111,
+                "value": "Headstone heading",
+                "clueEnd": 113
+              },
+              {
+                "clueNum": 38,
+                "clueStart": 115,
+                "value": "1979 movie with the line \"This is Ripley, last survivor of the Nostromo, signing off\"",
+                "clueEnd": 119
+              },
+              {
+                "clueNum": 39,
+                "clueStart": 120,
+                "value": "Goes around",
+                "clueEnd": 124
+              },
+              {
+                "clueNum": 40,
+                "clueStart": 126,
+                "value": "Legal position in municipal govt.",
+                "clueEnd": 128
+              },
+              {
+                "clueNum": 41,
+                "clueStart": 130,
+                "value": "Like lead or gold, notably",
+                "clueEnd": 134
+              },
+              {
+                "clueNum": 42,
+                "clueStart": 137,
+                "value": "Mario Kart platform",
+                "clueEnd": 139
+              },
+              {
+                "clueNum": 43,
+                "clueStart": 141,
+                "value": "Tuber that can be candied",
+                "clueEnd": 143
+              },
+              {
+                "clueNum": 44,
+                "clueStart": 145,
+                "value": "A majority of the characters on TV's \"St. Elsewhere,\" in brief",
+                "clueEnd": 147
+              },
+              {
+                "clueNum": 45,
+                "clueStart": 150,
+                "value": "Neighbor of India: Abbr.",
+                "clueEnd": 152
+              },
+              {
+                "clueNum": 47,
+                "clueStart": 154,
+                "value": "Component in a car's suspension system",
+                "clueEnd": 160
+              },
+              {
+                "clueNum": 50,
+                "clueStart": 162,
+                "value": "\"___, ___, it looks like rain!\": Christopher Robin",
+                "clueEnd": 164
+              },
+              {
+                "clueNum": 53,
+                "clueStart": 165,
+                "value": "Big movie star, e.g.",
+                "clueEnd": 171
+              },
+              {
+                "clueNum": 55,
+                "clueStart": 173,
+                "value": "What professional tennis has been in since 1968",
+                "clueEnd": 179
+              },
+              {
+                "clueNum": 57,
+                "clueStart": 180,
+                "value": "Where an important call may be directed",
+                "clueEnd": 186
+              },
+              {
+                "clueNum": 58,
+                "clueStart": 188,
+                "value": "System that ended in 1917",
+                "clueEnd": 194
+              },
+              {
+                "clueNum": 59,
+                "clueStart": 195,
+                "value": "Purplish red",
+                "clueEnd": 201
+              },
+              {
+                "clueNum": 60,
+                "clueStart": 203,
+                "value": "Weeks in Spain",
+                "clueEnd": 209
+              }
+            ],
+            "D": [
+              {
+                "clueNum": 1,
+                "clueStart": 0,
+                "value": "Player at Citi Field",
+                "clueEnd": 30
+              },
+              {
+                "clueNum": 2,
+                "clueStart": 1,
+                "value": "\"That feels nice!\"",
+                "clueEnd": 31
+              },
+              {
+                "clueNum": 3,
+                "clueStart": 2,
+                "value": "Scientist who notably passed away on 33-Down (2018)",
+                "clueEnd": 197,
+                "related": {
+                  "down": [
+                    33
+                  ],
+                  "across": [
+                    
+                  ]
+                }
+              },
+              {
+                "clueNum": 4,
+                "clueStart": 3,
+                "value": "You might go on tiptoe while wearing this",
+                "clueEnd": 48
+              },
+              {
+                "clueNum": 5,
+                "clueStart": 4,
+                "value": "Fungus-to-be",
+                "clueEnd": 64
+              },
+              {
+                "clueNum": 6,
+                "clueStart": 6,
+                "value": "Celebratory seasons",
+                "clueEnd": 66
+              },
+              {
+                "clueNum": 7,
+                "clueStart": 7,
+                "value": "First digit of this puzzle's subject, whose next four digits are the number of rows and then columns of the grid",
+                "clueEnd": 67
+              },
+              {
+                "clueNum": 8,
+                "clueStart": 8,
+                "value": "B-ball",
+                "clueEnd": 68
+              },
+              {
+                "clueNum": 9,
+                "clueStart": 10,
+                "value": "Apply, as sunscreen",
+                "clueEnd": 70
+              },
+              {
+                "clueNum": 10,
+                "clueStart": 11,
+                "value": "Some craft drafts, for short",
+                "clueEnd": 56,
+                "related": {
+                  "down": [
+                    
+                  ],
+                  "across": [
+                    27
+                  ]
+                }
+              },
+              {
+                "clueNum": 11,
+                "clueStart": 12,
+                "value": "Scientist who was notably born on 33-Down (1879)",
+                "clueEnd": 207,
+                "related": {
+                  "down": [
+                    33
+                  ],
+                  "across": [
+                    
+                  ]
+                }
+              },
+              {
+                "clueNum": 12,
+                "clueStart": 13,
+                "value": "Make even ",
+                "clueEnd": 43
+              },
+              {
+                "clueNum": 13,
+                "clueStart": 14,
+                "value": "Home of the Braves, for short",
+                "clueEnd": 44
+              },
+              {
+                "clueNum": 18,
+                "clueStart": 35,
+                "value": "New Deal org.",
+                "clueEnd": 65
+              },
+              {
+                "clueNum": 19,
+                "clueStart": 39,
+                "value": "What some thank God for: Abbr.",
+                "clueEnd": 69
+              },
+              {
+                "clueNum": 21,
+                "clueStart": 60,
+                "value": "Comedian and political commentator Bill",
+                "clueEnd": 120
+              },
+              {
+                "clueNum": 22,
+                "clueStart": 61,
+                "value": "Who said \"Courage is knowing what not to fear\"",
+                "clueEnd": 121
+              },
+              {
+                "clueNum": 25,
+                "clueStart": 73,
+                "value": "Carolina N.H.L.'ers, informally",
+                "clueEnd": 133
+              },
+              {
+                "clueNum": 26,
+                "clueStart": 74,
+                "value": "Like the main character in many a horror film ... or so they believe",
+                "clueEnd": 134
+              },
+              {
+                "clueNum": 28,
+                "clueStart": 78,
+                "value": "\"Same here\"",
+                "clueEnd": 138
+              },
+              {
+                "clueNum": 29,
+                "clueStart": 86,
+                "value": "Mathematician known for the constant \"e\" (2.71828)",
+                "clueEnd": 146
+              },
+              {
+                "clueNum": 31,
+                "clueStart": 94,
+                "value": "Require",
+                "clueEnd": 199
+              },
+              {
+                "clueNum": 32,
+                "clueStart": 96,
+                "value": "Starting point for a slippery slope argument",
+                "clueEnd": 201
+              },
+              {
+                "clueNum": 33,
+                "clueStart": 97,
+                "value": "An irrational reason to celebrate?",
+                "clueEnd": 157,
+                "related": {
+                  "down": [
+                    3,
+                    11
+                  ],
+                  "across": [
+                    
+                  ]
+                }
+              },
+              {
+                "clueNum": 34,
+                "clueStart": 98,
+                "value": "Captcha targets",
+                "clueEnd": 203
+              },
+              {
+                "clueNum": 35,
+                "clueStart": 100,
+                "value": "One might center around being unprepared for a test",
+                "clueEnd": 205
+              },
+              {
+                "clueNum": 45,
+                "clueStart": 150,
+                "value": "Something read by a chiromancer",
+                "clueEnd": 195
+              },
+              {
+                "clueNum": 46,
+                "clueStart": 151,
+                "value": "Actress Shawkat of \"Search Party\"",
+                "clueEnd": 196
+              },
+              {
+                "clueNum": 48,
+                "clueStart": 155,
+                "value": "Took a turn",
+                "clueEnd": 200
+              },
+              {
+                "clueNum": 49,
+                "clueStart": 159,
+                "value": "Where the Chair of St. Peter can be found in St. Peter's Basilica",
+                "clueEnd": 204
+              },
+              {
+                "clueNum": 51,
+                "clueStart": 163,
+                "value": "___ Major",
+                "clueEnd": 208
+              },
+              {
+                "clueNum": 52,
+                "clueStart": 164,
+                "value": "Relatives of berets",
+                "clueEnd": 209
+              },
+              {
+                "clueNum": 54,
+                "clueStart": 168,
+                "value": "\"Get it?\"",
+                "clueEnd": 198
+              },
+              {
+                "clueNum": 56,
+                "clueStart": 176,
+                "value": "Gun lobby grp.",
+                "clueEnd": 206
+              }
+            ]
+          },
+          "clueListOrder": [
+            "Across",
+            "Down"
+          ],
+          "layout": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "answers": [
+            "M",
+            "A",
+            "S",
+            "T",
+            "S",
+            null,
+            "N",
+            "T",
+            "H",
+            null,
+            "R",
+            "I",
+            "A",
+            "T",
+            "A",
+            "E",
+            "A",
+            "T",
+            "U",
+            "P",
+            null,
+            "O",
+            "H",
+            "O",
+            null,
+            "U",
+            "P",
+            "L",
+            "I",
+            "T",
+            "T",
+            "H",
+            "E",
+            "T",
+            "O",
+            "W",
+            "E",
+            "R",
+            "O",
+            "F",
+            "B",
+            "A",
+            "B",
+            "E",
+            "L",
+            null,
+            null,
+            "P",
+            "U",
+            "R",
+            "P",
+            "L",
+            "E",
+            "P",
+            "R",
+            "O",
+            "S",
+            "E",
+            null,
+            null,
+            "M",
+            "P",
+            "H",
+            null,
+            "E",
+            "A",
+            "S",
+            "E",
+            "S",
+            "I",
+            "N",
+            null,
+            "R",
+            "C",
+            "A",
+            "A",
+            "L",
+            "E",
+            "S",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "E",
+            "T",
+            "A",
+            "L",
+            "H",
+            "A",
+            "N",
+            "O",
+            "I",
+            null,
+            "G",
+            "P",
+            "S",
+            null,
+            "B",
+            "U",
+            "E",
+            "N",
+            "O",
+            "E",
+            "T",
+            "H",
+            "A",
+            "N",
+            null,
+            "R",
+            "I",
+            "P",
+            null,
+            "A",
+            "L",
+            "I",
+            "E",
+            "N",
+            "R",
+            "O",
+            "A",
+            "M",
+            "S",
+            null,
+            "A",
+            "D",
+            "A",
+            null,
+            "D",
+            "E",
+            "N",
+            "S",
+            "E",
+            null,
+            null,
+            "W",
+            "I",
+            "I",
+            null,
+            "Y",
+            "A",
+            "M",
+            null,
+            "D",
+            "R",
+            "S",
+            null,
+            null,
+            "P",
+            "A",
+            "K",
+            null,
+            "S",
+            "W",
+            "A",
+            "Y",
+            "B",
+            "A",
+            "R",
+            null,
+            "T",
+            "U",
+            "T",
+            "A",
+            "L",
+            "I",
+            "S",
+            "T",
+            "E",
+            "R",
+            null,
+            "O",
+            "P",
+            "E",
+            "N",
+            "E",
+            "R",
+            "A",
+            "L",
+            "I",
+            "N",
+            "E",
+            "O",
+            "N",
+            "E",
+            null,
+            "T",
+            "S",
+            "A",
+            "R",
+            "I",
+            "S",
+            "M",
+            "M",
+            "A",
+            "G",
+            "E",
+            "N",
+            "T",
+            "A",
+            null,
+            "S",
+            "E",
+            "M",
+            "A",
+            "N",
+            "A",
+            "S"
+          ]
+        }
+      }
+    ]
+  }

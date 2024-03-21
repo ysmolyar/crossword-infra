@@ -19,6 +19,9 @@ const s3AssetPath = "./assets"
 const rootObject = "index.html"
 const urlRewriteFunc = "functions/url-rewrite.js"
 const nytLambdaDeploymentPackage = "functions/nyt-lambda/deployment_package.zip"
+const lambdaEdgeDeploymentPackage = "functions/lambda-edge/deployment_package.zip"
+// this comes from AWS console. created in EdgeFunctionStack
+const edgeFunctionVersionArn = "arn:aws:lambda:us-east-1:504525441344:function:EdgeFunctionStack-EdgeLambdaFunction8ABCAD64-99kSh2xOT7OW:3"
 
 export class CrosswordInfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -66,10 +69,10 @@ export class CrosswordInfraStack extends cdk.Stack {
         subjectAlternativeNames: [`www.${domainName}`]
       });
 
-    // create a function to rewrite urls
-    const rewriteFunction = new cloudfront.Function(this, 'Function', {
-      code: cloudfront.FunctionCode.fromFile({ filePath: urlRewriteFunc }),
-    });
+    // // create a function to rewrite urls
+    // const rewriteFunction = new cloudfront.Function(this, 'Function', {
+    //   code: cloudfront.FunctionCode.fromFile({ filePath: urlRewriteFunc }),
+    // });
 
     // Create some security headers for responses
     const responseHeaderPolicy = new cloudfront.ResponseHeadersPolicy(this, 'SecurityHeadersResponseHeaderPolicy', {
@@ -104,6 +107,19 @@ export class CrosswordInfraStack extends cdk.Stack {
       }
     });
 
+    // const edgeFunctionVersion = lambda.Version.fromVersionArn(this, 'EdgeFunction', edgeFunctionVersionArn)
+
+    // Create the lambda function for Lambda@Edge
+    const edgeLambdaFunction = new lambda.Function(this, 'EdgeLambdaFunction', {
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'lambda_handler.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '..', lambdaEdgeDeploymentPackage)),
+      currentVersionOptions: {
+        removalPolicy: cdk.RemovalPolicy.DESTROY
+      },
+      description: 'Dynamic content generator for CloudFront'
+    });
+
     // Create the cloudfront distribution (tie it all together)
     // Single default behavior which applies a path pattern that matches all requests
     // NOTE: set invalidation on /index.html bc cloudfront caches everything for 24h by default.
@@ -117,9 +133,9 @@ export class CrosswordInfraStack extends cdk.Stack {
         origin: new origins.S3Origin(assetsBucket, {
           originAccessIdentity: cloudfrontOAI
         }),
-        functionAssociations: [{
-          function: rewriteFunction,
-          eventType: cloudfront.FunctionEventType.VIEWER_REQUEST
+        edgeLambdas: [{
+          functionVersion: edgeLambdaFunction.currentVersion,
+          eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST
         }],
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         responseHeadersPolicy: responseHeaderPolicy
@@ -133,32 +149,32 @@ export class CrosswordInfraStack extends cdk.Stack {
       zone
     });
 
-    // Create an A Record in the domain's hosted zone and point it to the cloudfront distribution
-    new route53.ARecord(this, 'ARecordWWW', {
+    new route53.CnameRecord(this, 'CRecord', {
+      domainName: domainName,
       recordName: `www.${domainName}`,
-      target: route53.RecordTarget.fromAlias(new route53targets.CloudFrontTarget(cloudfrontDistribution)),
       zone
-    });
-
-    // NYT injestion Lambda function definition
-    const nytLambdaFunction = new lambda.Function(this, 'NYTLambdaFunction', {
-      runtime: lambda.Runtime.PYTHON_3_12,
-      timeout: cdk.Duration.seconds(300),
-      handler: 'lambda_handler.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, `/../${nytLambdaDeploymentPackage}`), {
-        
-      })
     })
 
-    // Grant the lambda read/write to our s3 bucket
-    assetsBucket.grantReadWrite(nytLambdaFunction)
+    // // NYT injestion Lambda function definition
+    // const nytLambdaFunction = new lambda.Function(this, 'NYTLambdaFunction', {
+    //   runtime: lambda.Runtime.PYTHON_3_12,
+    //   timeout: cdk.Duration.seconds(300),
+    //   handler: 'lambda_handler.handler',
+    //   code: lambda.Code.fromAsset(path.join(__dirname, '..', nytLambdaDeploymentPackage), {
+        
+    //   })
+    // })
+
+    // // Grant the lambda read/write to our s3 bucket
+    // assetsBucket.grantReadWrite(nytLambdaFunction)
 
     // Define a DynamoDB table
     const table = new dynamodb.Table(this, 'CrosswordTable', {
       partitionKey: { name: 'clue_path', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'number', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, // Use on-demand capacity mode
     });
+
+    table.grantReadData(edgeLambdaFunction)
 
     // Output the ARN of the DynamoDB table
     new cdk.CfnOutput(this, 'CrosswordTableArn', {
