@@ -366,18 +366,29 @@ def update_home_page_html_from_template(s3, answers_data):
         first_article = articles[1]
         found_url_date = first_article.find_all(string=lambda text: text and url_date in text, recursive=True)
         if (found_url_date):
+            print(f"found an article at the top of the home page with url {url_date}. Deleting it...")
             first_article.extract()
 
         #inject article at position 1
+        print("inserting article into home page at position 1")
         articles.insert(1, article)
 
-        print(f"Putting s3 object with key index.html")
-        s3.put_object(
-            Bucket=ASSET_BUCKET_NAME,
-            Key=f"index.html",
-            Body=soup.prettify().encode('utf-8'),
-            ContentType='text/html'
-        )
+        # print(f"Putting s3 object with key index.html")
+        # s3.put_object(
+        #     Bucket=ASSET_BUCKET_NAME,
+        #     Key=f"index.html",
+        #     Body=soup.prettify().encode('utf-8'),
+        #     ContentType='text/html'
+        # )
+
+
+        # Specify the file path where you want to save the HTML content
+        file_path = "text-index.html"
+
+        # Open the file in write mode and write the HTML content to it
+        with open(file_path, "w") as file:
+            file.write(soup.prettify().encode('utf-8'))
+
 
 def download_template_from_s3(s3, bucket_name, template_path, local_path):
     # Download the file from S3
@@ -423,15 +434,15 @@ def handler(event, context):
         # Initialize DynamoDB client
         dynamodb = boto3.client('dynamodb', region_name='us-east-1')
 
-        # Iterate over the dictionary and create each clue page
-        for clue_data in answers_data:
-            print(clue_data)
-            dynamo_item = add_clue_to_dynamo(dynamodb, clue_data)
-            create_clue_page_html_from_template(s3, dynamo_item)
+        # # Iterate over the dictionary and create each clue page
+        # for clue_data in answers_data:
+        #     print(clue_data)
+        #     dynamo_item = add_clue_to_dynamo(dynamodb, clue_data)
+        #     create_clue_page_html_from_template(s3, dynamo_item)
 
-        # create answer page for the day's puzzle
-        create_puzzle_page_html_from_template(s3, answers_data)
-        # update home page with link to puzzle page
+        # # create answer page for the day's puzzle
+        # create_puzzle_page_html_from_template(s3, answers_data)
+        # # update home page with link to puzzle page
         update_home_page_html_from_template(s3, answers_data)
 
         return {
