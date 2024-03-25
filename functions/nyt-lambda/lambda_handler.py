@@ -308,7 +308,7 @@ def update_home_page_html_from_template(s3, answers_data):
         # Create the h2 element
         h2 = soup.new_tag("h2")
         a = soup.new_tag("a", href=f"/nyt-crossword-answers-{url_date}/")
-        a.string = f"NYT Crossword {dotw_string} {month_string} {day_string}, {year_string}"
+        a.string = f"NYT Crossword Answers - {dotw_string} {month_string} {day_string}, {year_string}"
         h2.append(a)
 
         # Create the p element for author info
@@ -326,11 +326,13 @@ def update_home_page_html_from_template(s3, answers_data):
         span_date = soup.new_tag("span", **{"class": "date"})
         span_month = soup.new_tag("span", **{"class": "month"})
         span_month.string = month_string[:3]
-        span_month.append(month_string[3:])  # Append last chars to the month
+        span_month_inner = soup.new_tag("span")
+        span_month_inner.string = month_string[3:]  # Append last chars to the month
         span_day = soup.new_tag("span", **{"class": "day"})
         span_day.string = day_string
         span_year = soup.new_tag("span", **{"class": "year"})
         span_year.string = f", {year_string}"
+        span_month.append(span_month_inner)
         span_date.append(span_month)
         span_date.append(span_day)
         span_date.append(span_year)
@@ -369,25 +371,26 @@ def update_home_page_html_from_template(s3, answers_data):
             print(f"found an article at the top of the home page with url {url_date}. Deleting it...")
             first_article.extract()
 
+        welcome_banner = articles[0]
+
         #inject article at position 1
         print("inserting article into home page at position 1")
-        articles.insert(1, article)
+        welcome_banner.insert_after(article)
 
-        # print(f"Putting s3 object with key index.html")
-        # s3.put_object(
-        #     Bucket=ASSET_BUCKET_NAME,
-        #     Key=f"index.html",
-        #     Body=soup.prettify().encode('utf-8'),
-        #     ContentType='text/html'
-        # )
+        # UPDATE WELCOME BANNER DATE
+        print("updating welcome banner date")
+        welcome_banner_div_info = welcome_banner.find_all('div', **{'class':'info'})[0]
+        welcome_banner_date_span = welcome_banner_div_info.find_all('span')[0]
+        welcome_banner_date_span.extract()
+        welcome_banner_div_info.insert(0, span_date)
 
-
-        # Specify the file path where you want to save the HTML content
-        file_path = "text-index.html"
-
-        # Open the file in write mode and write the HTML content to it
-        with open(file_path, "w") as file:
-            file.write(soup.prettify().encode('utf-8'))
+        print(f"Putting s3 object with key index.html")
+        s3.put_object(
+            Bucket=ASSET_BUCKET_NAME,
+            Key=f"index.html",
+            Body=soup.prettify().encode('utf-8'),
+            ContentType='text/html'
+        )
 
 
 def download_template_from_s3(s3, bucket_name, template_path, local_path):
@@ -434,15 +437,15 @@ def handler(event, context):
         # Initialize DynamoDB client
         dynamodb = boto3.client('dynamodb', region_name='us-east-1')
 
-        # # Iterate over the dictionary and create each clue page
-        # for clue_data in answers_data:
-        #     print(clue_data)
-        #     dynamo_item = add_clue_to_dynamo(dynamodb, clue_data)
-        #     create_clue_page_html_from_template(s3, dynamo_item)
+        # Iterate over the dictionary and create each clue page
+        for clue_data in answers_data:
+            print(clue_data)
+            dynamo_item = add_clue_to_dynamo(dynamodb, clue_data)
+            create_clue_page_html_from_template(s3, dynamo_item)
 
-        # # create answer page for the day's puzzle
-        # create_puzzle_page_html_from_template(s3, answers_data)
-        # # update home page with link to puzzle page
+        # create answer page for the day's puzzle
+        create_puzzle_page_html_from_template(s3, answers_data)
+        # update home page with link to puzzle page
         update_home_page_html_from_template(s3, answers_data)
 
         return {
