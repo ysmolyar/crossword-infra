@@ -177,3 +177,10 @@ Ended up having to resort to web scraping someone's personal website bc NYT has 
 
 - if need to redesign website, can update all files using dynamo, save them to new file name (index2.html), and update the cloudfront function on viewer event to redirect to the appropriate file name.
     - can save the new file name of version as an ssm parameter and reference it if needed
+
+
+TODO:
+- don't need to read from dynamo when creating clue page. can just read the s3 object to see if answers are already in the green box
+- can add some kind of table or s3 object when a given day has already been processed. so the code doesn't have to recreate all the objects
+- need to make invalidations programmatic
+- CLEAN UP CODE :D 

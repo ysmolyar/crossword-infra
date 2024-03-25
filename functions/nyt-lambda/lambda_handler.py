@@ -4,7 +4,8 @@ import json
 import requests
 import boto3
 
-DATE = datetime.today()
+# how to set a manual datetime
+#datetime(year=2024, month=3, day=24)
 XWORD_INFO_URI = "https://www.xwordinfo.com/Crossword?date={}"
 DIMENSION = 15
 SUNDAY_DIMENSION = 21
@@ -15,6 +16,8 @@ CLUE_TEMPLATE_S3_PATH = "clue-path/clue.html"
 CLUE_TEMPLATE_LOCAL_PATH = "/tmp/clue.html"
 PUZZLE_TEMPLATE_S3_PATH = "puzzle-path/puzzle.html"
 PUZZLE_TEMPLATE_LOCAL_PATH = "/tmp/puzzle.html"
+HOME_PAGE_S3_PATH = "index.html"
+HOME_PAGE_LOCAL_PATH = "/tmp/index.html"
 # takes datetime and makes string like 3/21/24
 def format_date_for_xword(date):
     return date.strftime("%-m/%-d/%Y")
@@ -270,6 +273,112 @@ def create_puzzle_page_html_from_template(s3, answers_data):
             ContentType='text/html'
         )
 
+def update_home_page_html_from_template(s3, answers_data):
+    clue_data = answers_data[0]
+    date_string = clue_data.get('publish_date', '')
+    parsed_date = datetime.strptime(date_string, "%m/%d/%Y")
+    dotw_string = parsed_date.strftime("%A")
+    month_string = parsed_date.strftime("%B")
+    day_string = parsed_date.strftime("%d")
+    year_string = parsed_date.strftime("%Y")
+    url_date = parsed_date.strftime("%m-%d-%y")
+
+    # Load HTML template
+    print("reading template from local file and injecting values")
+    with open(HOME_PAGE_LOCAL_PATH, 'r') as file:
+        template_content = file.read()
+
+        soup = BeautifulSoup(template_content, 'html.parser')
+        # Find the <div> element with class articles
+        articles_container = soup.find('div', class_='articles')
+        # Count the number of articles within the container
+        articles = articles_container.find_all('article')
+        print("Number of articles on the home page:", len(articles))
+        # delete last elemenet if we have a week or more already
+        if len(articles) >= 8:
+            last_article = articles[-1]
+            last_article.extract()
+
+        # Create the article element with specified class
+        article = soup.new_tag("article", **{"class": "box post post-excerpt"})
+
+        # Create the header element
+        header = soup.new_tag("header")
+
+        # Create the h2 element
+        h2 = soup.new_tag("h2")
+        a = soup.new_tag("a", href=f"/nyt-crossword-answers-{url_date}/")
+        a.string = f"NYT Crossword {dotw_string} {month_string} {day_string}, {year_string}"
+        h2.append(a)
+
+        # Create the p element for author info
+        p_author = soup.new_tag("p")
+        p_author.string = "NYT Crossword Answers/ By Yoni Smolyar"
+
+        # Append h2 and p_author to header
+        header.append(h2)
+        header.append(p_author)
+
+        # Create the div.info element
+        div_info = soup.new_tag("div", **{"class": "info"})
+
+        # Create the span.date element
+        span_date = soup.new_tag("span", **{"class": "date"})
+        span_month = soup.new_tag("span", **{"class": "month"})
+        span_month.string = month_string[:3]
+        span_month.append(month_string[3:])  # Append last chars to the month
+        span_day = soup.new_tag("span", **{"class": "day"})
+        span_day.string = day_string
+        span_year = soup.new_tag("span", **{"class": "year"})
+        span_year.string = f", {year_string}"
+        span_date.append(span_month)
+        span_date.append(span_day)
+        span_date.append(span_year)
+
+        # Create the ul.stats element
+        ul_stats = soup.new_tag("ul", **{"class": "stats"})
+
+        # Create list items for statistics
+        for icon_class, count in [("fa-comment", "16"), ("fa-heart", "32"), ("fa-twitter", "64"), ("fa-facebook-f", "128")]:
+            li = soup.new_tag("li")
+            a_icon = soup.new_tag("a", href=f"/nyt-crossword-answers-{url_date}/", **{"class": f"icon {icon_class}"})
+            a_icon.string = count
+            li.append(a_icon)
+            ul_stats.append(li)
+
+        # Append span_date and ul_stats to div_info
+        div_info.append(span_date)
+        div_info.append(ul_stats)
+
+        # Create the p element for article content
+        p_content = soup.new_tag("p")
+        p_content.string = f"Here are all of the answers for the NYT Crossword on {dotw_string} {month_string} {day_string}, {year_string}"
+
+        # Append header, div_info, and p_content to article
+        article.append(header)
+        article.append(div_info)
+        article.append(p_content)
+
+        # Print the HTML
+        print(article)
+
+        # delete the first real article if it is the same date (ie this code ran more than once in a day)
+        first_article = articles[1]
+        found_url_date = first_article.find_all(string=lambda text: text and url_date in text, recursive=True)
+        if (found_url_date):
+            first_article.extract()
+
+        #inject article at position 1
+        articles.insert(1, article)
+
+        print(f"Putting s3 object with key index.html")
+        s3.put_object(
+            Bucket=ASSET_BUCKET_NAME,
+            Key=f"index.html",
+            Body=soup.prettify().encode('utf-8'),
+            ContentType='text/html'
+        )
+
 def download_template_from_s3(s3, bucket_name, template_path, local_path):
     # Download the file from S3
     try:
@@ -281,6 +390,7 @@ def download_template_from_s3(s3, bucket_name, template_path, local_path):
 def handler(event, context):
     # get current date, in appropriate
     current_date = datetime.now()
+    # current_date = datetime(year=2024, month=3, day=24)
     current_date_formatted = format_date_for_xword(current_date)
     # Send a GET request to the xword_info webpage
     response = requests.get(XWORD_INFO_URI.format(current_date_formatted))
@@ -302,11 +412,14 @@ def handler(event, context):
         # generate all clues and answers and aggregate in solution_map
         answers_data = answers_data + create_list_from_divs(across_divs, "across", current_date) + create_list_from_divs(down_divs, "down", current_date)
         print(answers_data)
-        print(f"{len(answers_data)} words found from xwordinfo.com for date {DATE}")
+        print(f"{len(answers_data)} words found from xwordinfo.com for date {current_date}")
         
         s3 = boto3.client('s3')
+        # download all template files from s3 locally. will use the local copy for templating 
         download_template_from_s3(s3, ASSET_BUCKET_NAME, CLUE_TEMPLATE_S3_PATH, CLUE_TEMPLATE_LOCAL_PATH)
         download_template_from_s3(s3, ASSET_BUCKET_NAME, PUZZLE_TEMPLATE_S3_PATH, PUZZLE_TEMPLATE_LOCAL_PATH)
+        download_template_from_s3(s3, ASSET_BUCKET_NAME, HOME_PAGE_S3_PATH, HOME_PAGE_LOCAL_PATH)
+
         # Initialize DynamoDB client
         dynamodb = boto3.client('dynamodb', region_name='us-east-1')
 
@@ -318,10 +431,12 @@ def handler(event, context):
 
         # create answer page for the day's puzzle
         create_puzzle_page_html_from_template(s3, answers_data)
+        # update home page with link to puzzle page
+        update_home_page_html_from_template(s3, answers_data)
 
         return {
             'statusCode': 200,
-            'body': json.dumps(f"${DATE} crossword parsed and uploaded to DynamoDB successfully!")
+            'body': json.dumps(f"${current_date} crossword parsed and uploaded to DynamoDB successfully!")
         }
 
 handler("", "")
