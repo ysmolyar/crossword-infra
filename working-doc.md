@@ -165,3 +165,15 @@ Ended up having to resort to web scraping someone's personal website bc NYT has 
 - [x] some more robust passing of lambda version arn between stacks... probably ssm params. or custom resource that goes to west2 and grabs a cfn output
     - https://github.com/aws/aws-cdk/issues/1575
 - prefix paths with /clue/ or something so that other routes can do non dynamo related things
+
+
+# v3 design
+
+- cron Lambda function will:
+    - query and retrieve latest crossword clues and answers
+    - add them to dynamodb
+    - create new s3 files from template
+        - check if file already exists, if yes, update and invalidate cache using boto3
+
+- if need to redesign website, can update all files using dynamo, save them to new file name (index2.html), and update the cloudfront function on viewer event to redirect to the appropriate file name.
+    - can save the new file name of version as an ssm parameter and reference it if needed

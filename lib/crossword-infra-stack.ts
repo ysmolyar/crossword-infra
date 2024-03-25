@@ -15,11 +15,10 @@ import {
 } from 'aws-cdk-lib';
 
 const domainName = "justcrossword.com"
-const s3AssetPath = "./assets"
+const s3AssetPath = "./template"
 const rootObject = "index.html"
 const urlRewriteFunc = "functions/url-rewrite.js"
 const nytLambdaDeploymentPackage = "functions/nyt-lambda/deployment_package.zip"
-const lambdaEdgeDeploymentPackage = "functions/lambda-edge/deployment_package.zip"
 // this comes from AWS console. created in EdgeFunctionStack
 const edgeFunctionVersionArn = "arn:aws:lambda:us-east-1:504525441344:function:EdgeFunctionStack-EdgeLambdaFunction8ABCAD64-99kSh2xOT7OW:3"
 
@@ -69,10 +68,10 @@ export class CrosswordInfraStack extends cdk.Stack {
         subjectAlternativeNames: [`www.${domainName}`]
       });
 
-    // // create a function to rewrite urls
-    // const rewriteFunction = new cloudfront.Function(this, 'Function', {
-    //   code: cloudfront.FunctionCode.fromFile({ filePath: urlRewriteFunc }),
-    // });
+    // create a function to rewrite urls
+    const rewriteFunction = new cloudfront.Function(this, 'Function', {
+      code: cloudfront.FunctionCode.fromFile({ filePath: urlRewriteFunc }),
+    });
 
     // Create some security headers for responses
     const responseHeaderPolicy = new cloudfront.ResponseHeadersPolicy(this, 'SecurityHeadersResponseHeaderPolicy', {
@@ -107,19 +106,6 @@ export class CrosswordInfraStack extends cdk.Stack {
       }
     });
 
-    // const edgeFunctionVersion = lambda.Version.fromVersionArn(this, 'EdgeFunction', edgeFunctionVersionArn)
-
-    // Create the lambda function for Lambda@Edge
-    const edgeLambdaFunction = new lambda.Function(this, 'EdgeLambdaFunction', {
-      runtime: lambda.Runtime.PYTHON_3_12,
-      handler: 'lambda_handler.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '..', lambdaEdgeDeploymentPackage)),
-      currentVersionOptions: {
-        removalPolicy: cdk.RemovalPolicy.DESTROY
-      },
-      description: 'Dynamic content generator for CloudFront'
-    });
-
     // Create the cloudfront distribution (tie it all together)
     // Single default behavior which applies a path pattern that matches all requests
     // NOTE: set invalidation on /index.html bc cloudfront caches everything for 24h by default.
@@ -133,10 +119,14 @@ export class CrosswordInfraStack extends cdk.Stack {
         origin: new origins.S3Origin(assetsBucket, {
           originAccessIdentity: cloudfrontOAI
         }),
-        edgeLambdas: [{
-          functionVersion: edgeLambdaFunction.currentVersion,
-          eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST
+        functionAssociations: [{
+          function: rewriteFunction,
+          eventType: cloudfront.FunctionEventType.VIEWER_REQUEST
         }],
+        // edgeLambdas: [{
+        //   functionVersion: edgeLambdaFunction.currentVersion,
+        //   eventType: cloudfront.LambdaEdgeEventType.ORIGIN_RESPONSE
+        // }],
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         responseHeadersPolicy: responseHeaderPolicy
       }
@@ -173,8 +163,6 @@ export class CrosswordInfraStack extends cdk.Stack {
       partitionKey: { name: 'clue_path', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, // Use on-demand capacity mode
     });
-
-    table.grantReadData(edgeLambdaFunction)
 
     // Output the ARN of the DynamoDB table
     new cdk.CfnOutput(this, 'CrosswordTableArn', {

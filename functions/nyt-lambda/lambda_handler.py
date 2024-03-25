@@ -4,23 +4,58 @@ import json
 import requests
 import boto3
 
-ORACLE_URI = "https://www.nytimes.com/svc/crosswords/v2/oracle/daily.json"
-PUZZLE_DETAILS_URI = "https://www.nytimes.com/svc/crosswords/v2/puzzle/{}.json"
-NYT_LOGIN_URI = "https://myaccount.nytimes.com/svc/ios/v2/login"
-DATE = "3/21/2024"
+DATE = datetime.today()
 XWORD_INFO_URI = "https://www.xwordinfo.com/Crossword?date={}"
 DIMENSION = 15
 SUNDAY_DIMENSION = 21
 
 DYNAMO_TABLE_NAME = "CrosswordInfraStack-CrosswordTableC285ED21-111C8OOVQD3G"
+ASSET_BUCKET_NAME = "crosswordinfrastack-websitebucket75c24d94-fj4j7w0e6nfq"
+CLUE_TEMPLATE_S3_PATH = "clue-path/clue.html"
+CLUE_TEMPLATE_LOCAL_PATH = "/tmp/clue.html"
+PUZZLE_TEMPLATE_S3_PATH = "puzzle-path/puzzle.html"
+PUZZLE_TEMPLATE_LOCAL_PATH = "/tmp/puzzle.html"
+# takes datetime and makes string like 3/21/24
+def format_date_for_xword(date):
+    return date.strftime("%-m/%-d/%Y")
 
 def read_json_file(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
     return data
 
-def create_map_from_divs(divs, direction):
-    solution_map = {}
+def create_list_from_divs(divs, direction, date):
+        # iterate over all divs. They follow the patterns
+        #
+        # <div>34</div>
+        # <div>Buyer : <a href="/Finder?w=VENDEE">VENDEE</a></div>
+        # <div>35</div>
+        # <div>Sudden arrival : <a href="/Finder?w=INRUSH">INRUSH</a></div>
+        # <div>37</div>
+        # 
+        # Turn this structure into a dictionary
+        # [
+        #    {
+        #      "clue": "Buyer"
+        #      "number": "34",
+        #      "direction": "across",
+        #      "answer": ["VENDEE"],
+        #      "clue_path": "buyer",
+        #      "published_date": "3/21/24",
+        #      "dotw": 6
+        #    },
+        #    {
+        #      "clue": "Sudden arrival"
+        #      "number": "35",
+        #      "direction": "across",
+        #      "answer": ["INRUSH"],
+        #      "clue_path": "sudden-arrival",
+        #      "published_date": "3/21/24",
+        #      "dotw": 6
+        #    },
+        # ]
+
+    solutions = []
     index = 0
     while index < len(divs):
         val = divs[index].text
@@ -35,166 +70,255 @@ def create_map_from_divs(divs, direction):
                 # rejoin intermediate list into a string
                 clue_path = "".join(clue_path).replace(' ', '-').replace('--', '-').lower()
                 clue_path = clue_path[1:] if clue_path[0] == '-' else clue_path
-                solution_map[clue] = { 
+                clue_path = clue_path[:-1] if clue_path.endswith('-') else clue_path
+
+                solutions.append({ 
+                    "clue": clue,
                     "number": val, 
                     "direction": direction, 
                     "answer": answer,
                     "clue_path": clue_path,
-                    "publish_date": DATE
-                    }
+                    "publish_date": format_date_for_xword(date),
+                    "dotw": date.weekday()
+                    })
                 index+=1
         index+=1 
-    return solution_map
+    return solutions
+
+# returns clue object from dynamo
+# need this to get the list of answers rather than just todays answer. for templating
+def add_clue_to_dynamo(dynamodb, clue_data):
+    number = clue_data.get('number', '')
+    direction = clue_data.get('direction', '')
+    clue_path = clue_data.get('clue_path', '')
+    new_answer = clue_data.get('answer', '')
+    answer = [new_answer]
+    publish_date = clue_data.get('publish_date', '')
+    clue = clue_data.get('clue', '')
+    
+    try:
+        # first look in Dynamo to see if the clue already exists. If yes, add the answer
+        response = dynamodb.get_item(
+            TableName=DYNAMO_TABLE_NAME,
+            Key={
+                'clue_path': {'S': clue_path}
+            }    
+        )
+
+        # Check if the item exists in the response
+        if 'Item' in response:
+            item = response['Item']
+            print("Clue already exists in dynamo:", item['clue_path']['S'])
+            existing_answers = json.loads(item['answer']['S'])
+            print("existing answers:", existing_answers)
+            # if new answer already in list of existing answers, don't add it again
+            if new_answer not in existing_answers:
+                print(f"new answer {new_answer} is not in existing answers. adding it")
+                answer = existing_answers.append(new_answer)
+            else:
+                print(f"new answer {new_answer} is already in existing answers. updating item in dynamo but leaving answer key alone")
+        else:
+            print(f"Clue {clue_path} does not already exist in dynamo")
+    except Exception as e:
+        print("Error reading clues from DynamoDB:", e)   
+
+    try:
+        # Create item to put into DynamoDB
+        item = {
+            'number': {'S': number},
+            'direction': {'S': direction},
+            'answer': {'S': json.dumps(answer)},
+            'clue_path': {'S': clue_path},
+            'publish_date': {'S': publish_date},
+            'clue': {'S': clue}
+        }
+        # Put item into DynamoDB table
+        response = dynamodb.put_item(
+            TableName=DYNAMO_TABLE_NAME,
+            Item=item
+        )
+        print(f"Added {clue_path} successfully:", response)
+    except Exception as e:
+        print("Error adding item to DynamoDB:", e)   
+
+    return {
+        'number': number,
+        'direction': direction,
+        'answer': answer,
+        'clue_path': clue_path,
+        'publish_date': publish_date,
+        'clue': clue
+    }
+
+def create_clue_page_html_from_template(s3, clue_data):
+    date_string = clue_data.get('publish_date', '')
+    parsed_date = datetime.strptime(date_string, "%m/%d/%Y")
+    dotw_string = parsed_date.strftime("%A")
+    month_string = parsed_date.strftime("%B")
+    day_string = parsed_date.strftime("%d")
+    year_string = parsed_date.strftime("%Y")
+    url_date = parsed_date.strftime("%m-%d-%y")
+
+    # Load HTML template
+    print("reading template from local file and injecting values")
+    with open(CLUE_TEMPLATE_LOCAL_PATH, 'r') as file:
+        template_content = file.read()
+        template_content = template_content.replace('{{CLUE}}', clue_data.get('clue', ''))
+        template_content = template_content.replace('{{URL_DATE}}', url_date)
+        template_content = template_content.replace('{{DOTW}}', dotw_string)
+        template_content = template_content.replace('{{MONTH}}', month_string)
+        template_content = template_content.replace('{{MONTH_FIRST3}}', month_string[:3])
+        template_content = template_content.replace('{{MONTH_REST}}', month_string[3:])
+        template_content = template_content.replace('{{DAY}}', day_string)
+        template_content = template_content.replace('{{YEAR}}', year_string)
+
+        soup = BeautifulSoup(template_content, 'html.parser')
+
+        # Find the <div> element with class "answer"
+        answer_div = soup.find('div', class_='answer')
+        # Create a new <strong> element
+        for ans in clue_data.get('answer'):
+            print(f"adding answer {ans}")
+            new_div = soup.new_tag('div')
+            new_answer = soup.new_tag('strong')
+            new_answer.string = ans  
+            # Append the new <strong> element to the answer <div>
+            new_div.append(new_answer)
+            answer_div.append(new_div)
+
+        print(f"Putting s3 object with key {clue_data['clue_path']}-crossword-clue/index.html")
+        s3.put_object(
+            Bucket=ASSET_BUCKET_NAME,
+            Key=f"{clue_data['clue_path']}-crossword-clue/index.html",
+            Body=soup.prettify().encode('utf-8'),
+            ContentType='text/html'
+        )
+
+def create_puzzle_page_html_from_template(s3, answers_data):
+    clue_data = answers_data[0]
+    date_string = clue_data.get('publish_date', '')
+    parsed_date = datetime.strptime(date_string, "%m/%d/%Y")
+    dotw_string = parsed_date.strftime("%A")
+    month_string = parsed_date.strftime("%B")
+    day_string = parsed_date.strftime("%d")
+    year_string = parsed_date.strftime("%Y")
+    url_date = parsed_date.strftime("%m-%d-%y")
+
+    # Filter clue_data based on direction
+    across_clues = [clue for clue in answers_data if clue["direction"] == "across"]
+    print(f"iterating over {len(across_clues)} across clues")
+    down_clues = [clue for clue in answers_data if clue["direction"] == "down"]
+    print(f"iterating over {len(down_clues)} down clues")
+
+    # Sort the filtered lists based on number
+    across_clues.sort(key=lambda x: int(x["number"]))
+    down_clues.sort(key=lambda x: int(x["number"]))
+
+    # Load HTML template
+    print("reading template from local file and injecting values")
+    with open(PUZZLE_TEMPLATE_LOCAL_PATH, 'r') as file:
+        template_content = file.read()
+        template_content = template_content.replace('{{CLUE}}', clue_data.get('clue', ''))
+        template_content = template_content.replace('{{URL_DATE}}', url_date)
+        template_content = template_content.replace('{{DOTW}}', dotw_string)
+        template_content = template_content.replace('{{MONTH}}', month_string)
+        template_content = template_content.replace('{{MONTH_FIRST3}}', month_string[:3])
+        template_content = template_content.replace('{{MONTH_REST}}', month_string[3:])
+        template_content = template_content.replace('{{DAY}}', day_string)
+        template_content = template_content.replace('{{YEAR}}', year_string)
+
+        soup = BeautifulSoup(template_content, 'html.parser')
+
+
+        # Find the <div> element with class
+        across_table = soup.find('table', class_='ACrossTable')
+        down_table = soup.find('table', class_='DCrossTable')
+
+        for clue in across_clues + down_clues:
+            '''
+            <tr>
+                <td class="left-column">Data 1</td>
+                <td class="right-column">Data 2</td>
+            </tr>
+            '''
+            print(f"adding clue {clue['number']}{clue['direction']}: {clue['answer']}")
+            new_row = soup.new_tag('tr')
+            clue_td = soup.new_tag('td')
+            clue_td.attrs['class'] = 'left-column'
+            clue_td.string = f"{clue['number']} {clue['clue']}"
+            ans_td = soup.new_tag('td')
+            ans_td.attrs['class'] = 'right-column'
+            
+            ans_a = soup.new_tag('a')
+            ans_a.attrs['href'] = f"/{clue['clue_path']}-crossword-clue/"
+            ans_a.string = clue['answer']
+            ans_td.append(ans_a)
+
+            new_row.append(clue_td)
+            new_row.append(ans_td)
+            # append to appropriate container
+            if clue['direction'] == 'across':
+                across_table.append(new_row) 
+            if clue['direction'] == 'down':
+                down_table.append(new_row)
+
+        print(f"Putting s3 object with key nyt-crossword-answers-{url_date}/index.html")
+        s3.put_object(
+            Bucket=ASSET_BUCKET_NAME,
+            Key=f"nyt-crossword-answers-{url_date}/index.html",
+            Body=soup.prettify().encode('utf-8'),
+            ContentType='text/html'
+        )
+
+def download_template_from_s3(s3, bucket_name, template_path, local_path):
+    # Download the file from S3
+    try:
+        s3.download_file(bucket_name, template_path, local_path)
+        print(f"File downloaded successfully from S3 to {local_path}")
+    except Exception as e:
+        print(f"Error downloading file from S3: {e}")
 
 def handler(event, context):
-    # 1. GET xword_info webpage
-
-    # get current date
-    current_date = datetime.now().strftime("%-m/%-d/%Y")
-
-    # Send a GET request to the URL
-    response = requests.get(XWORD_INFO_URI.format(DATE))
+    # get current date, in appropriate
+    current_date = datetime.now()
+    current_date_formatted = format_date_for_xword(current_date)
+    # Send a GET request to the xword_info webpage
+    response = requests.get(XWORD_INFO_URI.format(current_date_formatted))
     print(response)
     # Check if the request was successful (status code 200)
     if response.status_code == 200:
         # Parse the HTML content using BeautifulSoup
         soup = BeautifulSoup(response.text, 'html.parser')
 
+        answers_data = []
         # Find the container of all 'across' clues and answers
         across_container = soup.find(id="ACluesPan")
-
         # Find all divs in the container
-        divs = across_container.find_all("div")
-        solution_map = {}
-
-
-        # iterate over all divs. They follow the patterns
-        #
-        # <div>34</div>
-        # <div>Buyer : <a href="/Finder?w=VENDEE">VENDEE</a></div>
-        # <div>35</div>
-        # <div>Sudden arrival : <a href="/Finder?w=INRUSH">INRUSH</a></div>
-        # <div>37</div>
-        # 
-        # Turn this structure into a dictionary
-        # {
-        #    "Buyer": {
-        #      "number": "34",
-        #      "direction": "across",
-        #      "answer": "VENDEE",
-        #      "clue_path": "buyer"
-        #    },
-        #    "Sudden arrival": {
-        #      "number": "35",
-        #      "direction": "across",
-        #      "answer": "INRUSH",
-        #      "clue_path": "sudden-arrival"
-        #    },
-        # }
-        solution_map = solution_map | create_map_from_divs(divs, "across")
-
+        across_divs = across_container.find_all("div")
         # Find the container of all 'down' clues and answers
         down_container = soup.find(id="DCluesPan")
-
         # Find all divs in the container
-        divs = down_container.find_all("div")
-
-        solution_map = solution_map | create_map_from_divs(divs, "down")
-
-        print(solution_map)
-
-        print(f"{len(solution_map.keys())} pairs found from xwordinfo.com for date {DATE}")
+        down_divs = down_container.find_all("div")
+        # generate all clues and answers and aggregate in solution_map
+        answers_data = answers_data + create_list_from_divs(across_divs, "across", current_date) + create_list_from_divs(down_divs, "down", current_date)
+        print(answers_data)
+        print(f"{len(answers_data)} words found from xwordinfo.com for date {DATE}")
         
         s3 = boto3.client('s3')
-        
+        download_template_from_s3(s3, ASSET_BUCKET_NAME, CLUE_TEMPLATE_S3_PATH, CLUE_TEMPLATE_LOCAL_PATH)
+        download_template_from_s3(s3, ASSET_BUCKET_NAME, PUZZLE_TEMPLATE_S3_PATH, PUZZLE_TEMPLATE_LOCAL_PATH)
         # Initialize DynamoDB client
         dynamodb = boto3.client('dynamodb', region_name='us-east-1')
-    
-#         # Define the DynamoDB table name
-#         root_html_links = ''''''
-#         clues_html = '''
-# <div><a href="/{}/index.html" class="crossword-link">{}{} {}: View Answer</a></div>
-# '''
-        # Iterate over the dictionary
-        for clue, clue_data in solution_map.items():
-            number = clue_data.get('number', '')
-            direction = clue_data.get('direction', '')
-            clue_path = clue_data.get('clue_path', '')
-            answer = clue_data.get('answer', '')
-            publish_date = clue_data.get('publish_date', '')
 
+        # Iterate over the dictionary and create each clue page
+        for clue_data in answers_data:
+            print(clue_data)
+            dynamo_item = add_clue_to_dynamo(dynamodb, clue_data)
+            create_clue_page_html_from_template(s3, dynamo_item)
 
-            # Load HTML template
-            # with open('template/answer-page.html', 'r') as file:
-            #     template_content = file.read()
-            
-            # # Replace placeholders with actual values
-            # rendered_html = template_content.replace('{{CLUE}}', clue)
-            # rendered_html = rendered_html.replace('{{ANSWER}}', answer)
-            
-            # # TODO: better dry run functionality
-            # try:
-            #     with open(f"dry-run/{clue_path}-index.html", "x") as file:
-            #         file.write(rendered_html)
-            # except Exception as e:
-            #     print(e.strerror)
-            
-            
-            # # save html to list for root object update
-            # root_html_links += (clues_html.format(clue_path, number, direction[0], clue))
+        # create answer page for the day's puzzle
+        create_puzzle_page_html_from_template(s3, answers_data)
 
-            # # Upload rendered HTML to S3 bucket
-            # # TODO: better way of passing this bucket name. maybe env var from cdk stack
-            # print(f"Putting s3 object with key {clue_data['clue_path']}/index.html")
-            # s3.put_object(
-            #     Bucket='crosswordinfrastack-websitebucket75c24d94-geqg8lfkgxrr',
-            #     Key=f"{clue_data['clue_path']}/index.html",
-            #     Body=rendered_html.encode('utf-8'),
-            #     ContentType='text/html'
-            # )
-            
-            # Create item to put into DynamoDB
-            item = {
-                'number': {'S': number},
-                'direction': {'S': direction},
-                'answer': {'S': answer},
-                'clue_path': {'S': clue_path},
-                'publish_date': {'S': publish_date},
-                'clue': {'S': clue}
-            }
-            
-            try:
-                # Put item into DynamoDB table
-                response = dynamodb.put_item(
-                    TableName=DYNAMO_TABLE_NAME,
-                    Item=item
-                )
-                print("Item added successfully:", response)
-            except Exception as e:
-                print("Error adding item to DynamoDB:", e)
-
-        # write a list of new additions to root object
-        # TODO: right now we have a copy of the html file as a template, we will need to read the
-        # file from S3 and then inject more intelligently. probably by div or class
-        # Load root object HTML template
-        # with open('template/root-object.html', 'r') as file:
-        #     root_content = file.read()
-
-        # # Replace placeholders with actual values
-        # rendered_html = root_content.replace('{{CLUES}}', root_html_links) 
-        # rendered_html = rendered_html.replace('{{DATE}}', DATE) 
-
-        # with open(f"dry-run/index.html", "w") as file:
-        #     file.write(rendered_html)
-    
-        # # update root object
-        # print("Updating root object at index.html")
-        # s3.put_object(
-        #     Bucket='crosswordinfrastack-websitebucket75c24d94-geqg8lfkgxrr',
-        #     Key=f"index.html",
-        #     Body=rendered_html.encode('utf-8'),
-        #     ContentType='text/html'
-        # )
         return {
             'statusCode': 200,
             'body': json.dumps(f"${DATE} crossword parsed and uploaded to DynamoDB successfully!")
